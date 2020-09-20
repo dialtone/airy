@@ -25,12 +25,12 @@ fn main() -> ! {
         stm32::Peripherals::take(),
         cortex_m::peripheral::Peripherals::take(),
     ) {
-        defmt::debug!("Starting...");
+        //defmt::debug!("Starting...");
         // Set up the system clock. We want to run at 48MHz for this one.
         let rcc = dp.RCC.constrain();
-        let clocks = rcc.cfgr.sysclk(50.mhz()).freeze();
+        let clocks = rcc.cfgr.sysclk(48.mhz()).freeze();
 
-        defmt::debug!("Setup led");
+        //defmt::debug!("Setup led");
         // setup led
         let gpioc = dp.GPIOC.split();
         let mut led = gpioc.pc13.into_push_pull_output();
@@ -38,41 +38,48 @@ fn main() -> ! {
         let dwt = cp.DWT.constrain(cp.DCB, clocks);
         let mut delay = dwt.delay();
 
-        // Set up I2C - SCL is PB6 and SDA is PB7; they are set to Alternate Function 4
-        // as per the STM32F411xC/E datasheet page 60. Pin assignment as per the Nucleo-F446 board.
-        defmt::debug!("Setup I2C Pin 8 and 9");
+        led.set_high().unwrap();
+        delay.delay_ms(100_u32);
+
+        // Set up I2C - SCL is PB8 and SDA is PB9; they are set to Alternate Function 4
+        // as per the STM32F411xC/E datasheet page 60.
+        //defmt::debug!("Setup I2C Pin 8 and 9");
         let gpiob = dp.GPIOB.split();
         let scl = gpiob.pb8.into_alternate_af4_open_drain();
         let sda = gpiob.pb9.into_alternate_af4_open_drain();
         let i2c = I2c::i2c1(dp.I2C1, (scl, sda), 400.khz(), clocks);
 
-        defmt::debug!("Setup shared bus");
+        // defmt::debug!("Setup shared bus");
         let bus = shared_bus::BusManagerSimple::new(i2c);
 
-        defmt::debug!("Setup HM3301");
+        // defmt::debug!("Setup HM3301");
         let mut sensor = Hm3301::new(bus.acquire_i2c());
-        defmt::debug!("Enable I2C");
+        // defmt::debug!("Enable I2C");
         sensor.enable_i2c().unwrap();
 
-        defmt::debug!("Builder");
+        led.set_low().unwrap();
+        delay.delay_ms(100_u32);
+
+        // defmt::debug!("Builder");
         let interface = I2CDIBuilder::new().init(bus.acquire_i2c());
-        defmt::debug!("Creating new display");
+        // defmt::debug!("Creating new display");
         let mut disp: GraphicsMode<_> = SSD1306Builder::new().connect(interface).into();
-        defmt::debug!("Init display");
+        // defmt::debug!("Init display");
         disp.init().unwrap();
-        defmt::debug!("Flush Display");
+        // defmt::debug!("Flush Display");
         disp.flush().unwrap();
 
-        defmt::debug!("Text Style");
+        // defmt::debug!("Text Style");
         let text_style = TextStyleBuilder::new(Font6x8)
             .text_color(BinaryColor::On)
             .build();
 
         let mut lines: [String<heapless::consts::U32>; 4] = [String::new(), String::new(), String::new(), String::new()];
 
-        defmt::debug!("Starting loop");
+        // defmt::debug!("Starting loop");
         loop {
-            delay.delay_ms(1000_u32);
+            delay.delay_ms(800_u32);
+
             led.set_low().unwrap();
             delay.delay_ms(100_u32);
 
