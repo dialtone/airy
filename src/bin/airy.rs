@@ -6,8 +6,9 @@ use airy as _;
 
 use cortex_m_rt::entry;
 
+use crate::hal::{dwt::DwtExt, i2c::I2c, prelude::*, stm32};
 use core::fmt::Write;
-use stm32f4xx_hal::{dwt::DwtExt, i2c::I2c, prelude::*, stm32};
+use stm32f4xx_hal as hal;
 
 use embedded_graphics::{
     fonts::{Font6x8, Text},
@@ -67,7 +68,8 @@ fn main() -> ! {
             .text_color(BinaryColor::On)
             .build();
 
-        let mut lines: [String<heapless::consts::U32>; 4] = [String::new(), String::new(), String::new(), String::new()];
+        let mut lines: [String<heapless::consts::U32>; 4] =
+            [String::new(), String::new(), String::new(), String::new()];
         let mut errors: u32 = 0;
         defmt::debug!("Starting loop");
         loop {
@@ -93,7 +95,8 @@ fn main() -> ! {
                 for (i, line) in lines.iter().enumerate() {
                     Text::new(line, Point::new(0, i as i32 * 16))
                         .into_styled(text_style)
-                        .draw(&mut disp).unwrap_or_else(|_| errors += 1);
+                        .draw(&mut disp)
+                        .unwrap_or_else(|_| errors += 1);
                 }
                 disp.flush().unwrap_or_else(|_| errors += 1);
             } else {
